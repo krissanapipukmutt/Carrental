@@ -1,27 +1,21 @@
-import { createClient } from "@/lib/supabase/server";
-import { getAdminClient } from "@/lib/supabase/admin";
+import { executeWithAdminFallback } from "@/lib/supabase/query-helpers";
 import type { Database } from "@/lib/supabase/types";
-
-const getSupabase = async () => {
-  try {
-    return getAdminClient();
-  } catch {
-    return await createClient();
-  }
-};
-
-type UtilizationRow = Database["public"]["Views"]["mv_car_utilization"]["Row"];
+import { UtilizationTable } from "./utilization-table";
 
 const percentFormatter = new Intl.NumberFormat("th-TH", {
   maximumFractionDigits: 2,
 });
 
+type UtilizationRow = Database["car_rental"]["Views"]["mv_car_utilization"]["Row"];
+
 async function fetchUtilization(): Promise<UtilizationRow[]> {
-  const supabase = await getSupabase();
-  const { data, error } = await supabase
-    .from("mv_car_utilization")
-    .select("*")
-    .order("utilization_percent", { ascending: false });
+  const { data, error } = await executeWithAdminFallback((client) =>
+    client
+      .schema("car_rental")
+      .from("mv_car_utilization")
+      .select("*")
+      .order("utilization_percent", { ascending: false }),
+  );
 
   if (error) {
     throw new Error(error.message);
@@ -32,6 +26,7 @@ async function fetchUtilization(): Promise<UtilizationRow[]> {
 
 export default async function CarUtilizationReportPage() {
   const rows = await fetchUtilization();
+  const highlightCards = rows.slice(0, 6);
 
   return (
     <section className="space-y-6">
@@ -40,14 +35,20 @@ export default async function CarUtilizationReportPage() {
           อัตราการใช้งานรถ (90 วัน)
         </h2>
         <p className="text-sm text-slate-600">
-          ข้อมูลจาก view <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">mv_car_utilization</code>
+          ข้อมูลจาก view{" "}
+          <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">
+            mv_car_utilization
+          </code>
         </p>
       </header>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-slate-900">ภาพรวมล่าสุด</h3>
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {rows.slice(0, 6).map((row, index) => {
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {highlightCards.length === 0 ? (
+          <div className="md:col-span-2 xl:col-span-3 rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
+            ยังไม่มีข้อมูลการใช้งานรถในช่วง 90 วันที่ผ่านมา
+          </div>
+        ) : (
+          highlightCards.map((row, index) => {
             const utilization = row.utilization_percent ?? 0;
             return (
               <div
@@ -57,7 +58,9 @@ export default async function CarUtilizationReportPage() {
                 <p className="text-sm font-medium text-slate-700">
                   {row.make} {row.model}
                 </p>
-                <p className="text-xs text-slate-500">ทะเบียน {row.registration_no}</p>
+                <p className="text-xs text-slate-500">
+                  ทะเบียน {row.registration_no ?? "-"}
+                </p>
                 <div className="mt-3">
                   <div className="flex items-center justify-between text-xs text-slate-500">
                     <span>{percentFormatter.format(utilization)}%</span>
@@ -74,45 +77,12 @@ export default async function CarUtilizationReportPage() {
                 </div>
               </div>
             );
-          })}
-        </div>
+          })
+        )}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <table className="min-w-full table-auto border-collapse text-sm">
-          <thead className="bg-slate-100 text-slate-600">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium">รถ</th>
-              <th className="px-4 py-3 text-left font-medium">ทะเบียน</th>
-              <th className="px-4 py-3 text-right font-medium">จำนวนวันที่ถูกเช่า</th>
-              <th className="px-4 py-3 text-right font-medium">เปอร์เซ็นต์การใช้งาน</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
-                  ยังไม่มีข้อมูลการใช้งานรถในช่วง 90 วันที่ผ่านมา
-                </td>
-              </tr>
-            ) : (
-              rows.map((row, index) => (
-                <tr key={row.car_id ?? index} className="border-t border-slate-200">
-                  <td className="px-4 py-3 text-slate-800">
-                    {row.make} {row.model}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{row.registration_no}</td>
-                  <td className="px-4 py-3 text-right">
-                    {row.rented_days ?? 0} / {row.period_days ?? 90}
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold text-slate-900">
-                    {percentFormatter.format(row.utilization_percent ?? 0)}%
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <UtilizationTable rows={rows} />
       </div>
     </section>
   );

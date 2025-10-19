@@ -41,7 +41,9 @@ Short paper
 ## เชื่อมต่อฐานข้อมูล
 
 1. สร้างโปรเจกต์ใน [Supabase](https://supabase.com/)
-2. รันคำสั่ง SQL ใน `docs/architecture.md` เพื่อสร้างตารางและ materialized views
+2. รันสคริปต์ใน `docs/architecture.md` ตามลำดับ (schema) แล้วตามด้วย seed ตัวอย่าง
+   - `supabase/seed/mock_cars.sql` เติมข้อมูลลูกค้า/รถ/สัญญาเช่า/ซ่อมบำรุง
+   - `supabase/seed/report_views.sql` สร้าง view สำหรับรายงานทั้งหมด
 3. ใช้คำสั่ง Supabase CLI เพื่อสร้างประเภทข้อมูล TypeScript
    ```bash
    npx supabase gen types typescript --project-id <project-id> --schema public > lib/supabase/types.ts
@@ -56,7 +58,7 @@ Short paper
 4. ประวัติซ่อมบำรุง (`mv_maintenance_history`)
 5. สัญญาเช่าค้างคืน (`mv_overdue_rentals`)
 
-แต่ละหน้ารายงานมีโครงร่างพร้อมคำอธิบายว่าจะเชื่อมต่อกับ view ใดใน Supabase
+แต่ละหน้ารายงานดึงข้อมูลจาก view ใน Supabase จริงและสามารถขยายต่อด้วยการใช้กราฟหรือ export CSV/PDF ได้
 
 ## ขั้นตอนถัดไปที่แนะนำ
 

@@ -1,16 +1,14 @@
 -- ตัวอย่างข้อมูลสำหรับ entity ที่เกี่ยวข้องกับรถ
 -- สามารถนำไปรันใน Supabase SQL Editor หรือ CLI: supabase db remote commit
 
-begin;
-
-insert into public.branches (id, name, address, phone)
+insert into car_rental.branches (id, name, address, phone)
 values
   ('b45ad0b8-5624-4d5e-8b7f-3f7d74b5e401', 'สาขาบางนา', '888 ถนนสุขุมวิท แขวงบางนา กรุงเทพมหานคร 10260', '02-123-4567'),
   ('30b6e6b3-9957-4dec-9110-1a227af18d1d', 'สาขาหัวหมาก', '99 ถนนหัวหมาก แขวงหัวหมาก เขตบางกะปิ กรุงเทพมหานคร 10240', '02-765-4321'),
   ('6a1c93fd-6cf8-4e8d-9c5b-7525302894f1', 'สาขาขอนแก่น', '55 ถนนมิตรภาพ ตำบลในเมือง อำเภอเมืองขอนแก่น 40000', '043-222-111')
 on conflict (id) do nothing;
 
-insert into public.employees (
+insert into car_rental.employees (
   id,
   auth_user_id,
   branch_id,
@@ -57,7 +55,7 @@ values
   )
 on conflict (id) do nothing;
 
-insert into public.customers (
+insert into car_rental.customers (
   id,
   first_name,
   last_name,
@@ -119,7 +117,7 @@ values
     '1987-03-20'
   ),
   (
-    'c5d6e7f8-9a0b-1c2d-3e4f-5g6h7i8j9k0l',
+    'c5d6e7f8-9a0b-4c2d-b34f-5b6c7d8e9f00',
     'กมลชนก',
     'วิศวกิจ',
     'kamonchanok.w@example.com',
@@ -130,7 +128,7 @@ values
   )
 on conflict (id) do nothing;
 
-insert into public.vehicle_categories (
+insert into car_rental.vehicle_categories (
   id,
   name,
   description,
@@ -147,7 +145,7 @@ values
   ('5f5b84f5-7ef3-4457-9d07-0d73ad725a4a', 'Electric', 'รถไฟฟ้า 5 ที่นั่ง พร้อมชาร์จ', 2000, 12400, 41000, 8000)
 on conflict (id) do nothing;
 
-insert into public.cars (
+insert into car_rental.cars (
   id,
   category_id,
   branch_id,
@@ -228,7 +226,7 @@ values
   )
 on conflict (id) do nothing;
 
-insert into public.maintenance_records (
+insert into car_rental.maintenance_records (
   id,
   car_id,
   maintenance_date,
@@ -281,7 +279,7 @@ values
   )
 on conflict (id) do nothing;
 
-insert into public.rental_contracts (
+insert into car_rental.rental_contracts (
   id,
   contract_no,
   customer_id,
@@ -334,7 +332,7 @@ values
     'ลูกค้าจองเที่ยวต่างจังหวัด แจ้งตรวจสภาพยางก่อนส่งมอบ'
   ),
   (
-    'e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0',
+    'e5f6a7b8-c9d0-41e2-a3b4-55c6d7e8f901',
     'CR-2025-0003',
     'f47ac10b-58cc-4372-a567-0e02b2c3d479',
     'b0d8a9d6-3dd2-4944-a17a-a9c12c1cdd89',
@@ -351,7 +349,7 @@ values
     'จองรถไฟฟ้าสำหรับทริปเที่ยวเขาใหญ่ ขอประกันภัยเพิ่มเติม'
   ),
   (
-    'u1v2w3x4-y5z6-a7b8-c9d0-e1f2g3h4i5j6',
+    'a1b2c3d4-e5f6-47a8-9b0c-d1e2f3a4b5c6',
     'CR-2025-0004',
     'b9a4d4e3-9c7f-4b4a-b5d7-e5c9b3a1d2e8',
     'b2e669dc-76e1-4b37-86cb-5ca1c2fca256',
@@ -368,9 +366,9 @@ values
     'เช่ากระบะขนของย้ายบ้าน คืนรถก่อนเวลา'
   ),
   (
-    'k7l8m9n0-p1q2-r3s4-t5u6-v7w8x9y0z1a2',
+    'b7c8d9e0-f1a2-43b4-c5d6-e7f8090a1b2c',
     'CR-2025-0005',
-    'c5d6e7f8-9a0b-1c2d-3e4f-5g6h7i8j9k0l',
+    'c5d6e7f8-9a0b-4c2d-b34f-5b6c7d8e9f00',
     '3fcf5416-6bc4-4d1c-b703-44ea9e27c00f',
     'b45ad0b8-5624-4d5e-8b7f-3f7d74b5e401',
     '30b6e6b3-9957-4dec-9110-1a227af18d1d',
@@ -386,7 +384,7 @@ values
   )
 on conflict (id) do nothing;
 
-insert into public.payments (
+insert into car_rental.payments (
   id,
   rental_id,
   payment_date,
@@ -432,8 +430,8 @@ values
     'มัดจำก่อนรับรถ 5 วันล่วงหน้า'
   ),
   (
-    'b3c4d5e6-f7g8-h9i0-j1k2-l3m4n5o6p7q8',
-    'e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0',
+    'b3c4d5e6-f7a8-49b0-c1d2-e3f405060708',
+    'e5f6a7b8-c9d0-41e2-a3b4-55c6d7e8f901',
     '2025-10-20 15:30:00+07',
     'credit_card',
     8000,
@@ -443,8 +441,8 @@ values
     'มัดจำรถไฟฟ้า และค่าประกันภัยเพิ่มเติม'
   ),
   (
-    'r9s0t1u2-v3w4-x5y6-z7a8-b9c0d1e2f3g4',
-    'u1v2w3x4-y5z6-a7b8-c9d0-e1f2g3h4i5j6',
+    'c9d0e1f2-34a5-46b7-89c0-d1e2f3a4b5c6',
+    'a1b2c3d4-e5f6-47a8-9b0c-d1e2f3a4b5c6',
     '2025-09-15 08:30:00+07',
     'bank_transfer',
     4800,
@@ -454,8 +452,8 @@ values
     'ค่าเช่า 3 วัน'
   ),
   (
-    'h5i6j7k8-l9m0-n1o2-p3q4-r5s6t7u8v9w0',
-    'k7l8m9n0-p1q2-r3s4-t5u6-v7w8x9y0z1a2',
+    'd5e6f7a8-b9c0-41d2-e3f4-a5b6c7d8e9f0',
+    'b7c8d9e0-f1a2-43b4-c5d6-e7f8090a1b2c',
     '2025-09-30 14:20:00+07',
     'bank_transfer',
     3000,
@@ -465,8 +463,8 @@ values
     'มัดจำรถเช่าเหมาเดือน'
   ),
   (
-    'x1y2z3a4-b5c6-d7e8-f9g0-h1i2j3k4l5m6',
-    'k7l8m9n0-p1q2-r3s4-t5u6-v7w8x9y0z1a2',
+    'f1a2b3c4-d5e6-47f8-90a1-b2c3d4e5f607',
+    'b7c8d9e0-f1a2-43b4-c5d6-e7f8090a1b2c',
     '2025-10-01 09:15:00+07',
     'credit_card',
     26100,
@@ -477,7 +475,7 @@ values
   )
 on conflict (id) do nothing;
 
-insert into public.rental_inspections (
+insert into car_rental.rental_inspections (
   id,
   rental_id,
   inspection_type,
@@ -501,8 +499,8 @@ values
     'a9f1ce88-6dc9-49cc-9bef-97845d5df85a'
   ),
   (
-    'n7o8p9q0-r1s2-t3u4-v5w6-x7y8z9a0b1c2',
-    'u1v2w3x4-y5z6-a7b8-c9d0-e1f2g3h4i5j6',
+    'c7d8e9f0-a1b2-43c4-d5e6-f7a8090b1c2d',
+    'a1b2c3d4-e5f6-47a8-9b0c-d1e2f3a4b5c6',
     'pickup',
     '2025-09-15 08:45:00+07',
     65500,
@@ -512,8 +510,8 @@ values
     'a9f1ce88-6dc9-49cc-9bef-97845d5df85a'
   ),
   (
-    'd3e4f5g6-h7i8-j9k0-l1m2-n3o4p5q6r7s8',
-    'u1v2w3x4-y5z6-a7b8-c9d0-e1f2g3h4i5j6',
+    'd3e4f5a6-b7c8-49d0-e1f2-a3b4c5d6e7f8',
+    'a1b2c3d4-e5f6-47a8-9b0c-d1e2f3a4b5c6',
     'return',
     '2025-09-18 16:30:00+07',
     65800,
@@ -523,8 +521,8 @@ values
     'a9f1ce88-6dc9-49cc-9bef-97845d5df85a'
   ),
   (
-    't9u0v1w2-x3y4-z5a6-b7c8-d9e0f1g2h3i4',
-    'k7l8m9n0-p1q2-r3s4-t5u6-v7w8x9y0z1a2',
+    'e9f0a1b2-c3d4-45e6-f7a8-09b0c1d2e3f4',
+    'b7c8d9e0-f1a2-43b4-c5d6-e7f8090a1b2c',
     'pickup',
     '2025-10-01 09:00:00+07',
     14500,
@@ -534,5 +532,3 @@ values
     'a9f1ce88-6dc9-49cc-9bef-97845d5df85a'
   )
 on conflict (id) do nothing;
-
-commit;

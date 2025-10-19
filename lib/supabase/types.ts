@@ -12,7 +12,7 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
-  public: {
+  car_rental: {
     Tables: {
       branches: {
         Row: {
@@ -94,57 +94,6 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "vehicle_categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      coupons: {
-        Row: {
-          code: string
-          created_at: string | null
-          discount_percent: number
-          email: string | null
-          id: string
-          survey_id: string | null
-          survey_response_id: string | null
-          used: boolean
-          used_at: string | null
-        }
-        Insert: {
-          code: string
-          created_at?: string | null
-          discount_percent?: number
-          email?: string | null
-          id?: string
-          survey_id?: string | null
-          survey_response_id?: string | null
-          used?: boolean
-          used_at?: string | null
-        }
-        Update: {
-          code?: string
-          created_at?: string | null
-          discount_percent?: number
-          email?: string | null
-          id?: string
-          survey_id?: string | null
-          survey_response_id?: string | null
-          used?: boolean
-          used_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "coupons_survey_fk"
-            columns: ["survey_id"]
-            isOneToOne: false
-            referencedRelation: "survey_responses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "coupons_survey_response_id_fkey"
-            columns: ["survey_response_id"]
-            isOneToOne: false
-            referencedRelation: "survey_responses"
             referencedColumns: ["id"]
           },
         ]
@@ -521,108 +470,6 @@ export type Database = {
           },
         ]
       }
-      survey_responses: {
-        Row: {
-          addons: string[] | null
-          addons_other: string | null
-          age: string | null
-          budget: string | null
-          channels: string[] | null
-          channels_other: string | null
-          consent: boolean
-          created_at: string | null
-          email: string | null
-          factors: string[] | null
-          factors_other: string | null
-          freq: string | null
-          gender: string | null
-          gift_freq: string | null
-          gift_purchase: boolean | null
-          health: string | null
-          id: string
-          income: string | null
-          job: string | null
-          job_other: string | null
-          location: string | null
-          meals: string | null
-          meals_custom: number | null
-          meals_final: string | null
-          pack: string | null
-          pay: string | null
-          pay_other: string | null
-          rice: string[] | null
-          sources: string[] | null
-          sources_other: string | null
-          sub: string | null
-        }
-        Insert: {
-          addons?: string[] | null
-          addons_other?: string | null
-          age?: string | null
-          budget?: string | null
-          channels?: string[] | null
-          channels_other?: string | null
-          consent: boolean
-          created_at?: string | null
-          email?: string | null
-          factors?: string[] | null
-          factors_other?: string | null
-          freq?: string | null
-          gender?: string | null
-          gift_freq?: string | null
-          gift_purchase?: boolean | null
-          health?: string | null
-          id?: string
-          income?: string | null
-          job?: string | null
-          job_other?: string | null
-          location?: string | null
-          meals?: string | null
-          meals_custom?: number | null
-          meals_final?: string | null
-          pack?: string | null
-          pay?: string | null
-          pay_other?: string | null
-          rice?: string[] | null
-          sources?: string[] | null
-          sources_other?: string | null
-          sub?: string | null
-        }
-        Update: {
-          addons?: string[] | null
-          addons_other?: string | null
-          age?: string | null
-          budget?: string | null
-          channels?: string[] | null
-          channels_other?: string | null
-          consent?: boolean
-          created_at?: string | null
-          email?: string | null
-          factors?: string[] | null
-          factors_other?: string | null
-          freq?: string | null
-          gender?: string | null
-          gift_freq?: string | null
-          gift_purchase?: boolean | null
-          health?: string | null
-          id?: string
-          income?: string | null
-          job?: string | null
-          job_other?: string | null
-          location?: string | null
-          meals?: string | null
-          meals_custom?: number | null
-          meals_final?: string | null
-          pack?: string | null
-          pay?: string | null
-          pay_other?: string | null
-          rice?: string[] | null
-          sources?: string[] | null
-          sources_other?: string | null
-          sub?: string | null
-        }
-        Relationships: []
-      }
       vehicle_categories: {
         Row: {
           created_at: string
@@ -889,7 +736,7 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  public: {
+  car_rental: {
     Enums: {},
   },
 } as const

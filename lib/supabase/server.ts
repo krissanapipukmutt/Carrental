@@ -15,6 +15,9 @@ export const createClient = async () => {
   }
 
   return createServerClient<Database>(url, anonKey, {
+    db: {
+      schema: 'car_rental',
+    },
     cookies: {
       get: async (name) => {
         return cookieStore.get(name)?.value;

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { executeWithAdminFallback } from "@/lib/supabase/query-helpers";
 
 const statusLabels: Record<
   string,
@@ -39,10 +39,9 @@ type CarStatusSummary = {
 
 async function fetchCarStatusSummary(): Promise<CarStatusSummary> {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("cars")
-      .select("status");
+    const { data, error } = await executeWithAdminFallback((client) =>
+      client.schema("car_rental").from("cars").select("status"),
+    );
 
     if (error) {
       throw error;

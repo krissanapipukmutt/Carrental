@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { getAdminClient } from "@/lib/supabase/admin";
+import { executeWithAdminFallback } from "@/lib/supabase/query-helpers";
 import type { Database } from "@/lib/supabase/types";
 
 type RentalRow =
-  Database["public"]["Tables"]["rental_contracts"]["Row"];
-type CustomerRow = Database["public"]["Tables"]["customers"]["Row"];
-type CarRow = Database["public"]["Tables"]["cars"]["Row"];
+  Database["car_rental"]["Tables"]["rental_contracts"]["Row"];
+type CustomerRow = Database["car_rental"]["Tables"]["customers"]["Row"];
+type CarRow = Database["car_rental"]["Tables"]["cars"]["Row"];
 
 type RentalWithRelations = RentalRow & {
   customers: Pick<CustomerRow, "first_name" | "last_name"> | null;
@@ -69,35 +68,32 @@ async function fetchRecentRentals(): Promise<{
   error: string | null;
 }> {
   try {
-    let supabase;
-    try {
-      supabase = getAdminClient();
-    } catch {
-      supabase = await createClient();
-    }
-    const { data, error } = await supabase
-      .from("rental_contracts")
-      .select(
+    const { data, error } = await executeWithAdminFallback((client) =>
+      client
+        .schema("car_rental")
+        .from("rental_contracts")
+        .select(
+          `
+          id,
+          contract_no,
+          pickup_datetime,
+          return_datetime,
+          rental_status,
+          total_amount,
+          customers (
+            first_name,
+            last_name
+          ),
+          cars (
+            registration_no,
+            make,
+            model
+          )
         `
-        id,
-        contract_no,
-        pickup_datetime,
-        return_datetime,
-        rental_status,
-        total_amount,
-        customers (
-          first_name,
-          last_name
-        ),
-        cars (
-          registration_no,
-          make,
-          model
         )
-      `
-      )
-      .order("pickup_datetime", { ascending: false })
-      .limit(10);
+        .order("pickup_datetime", { ascending: false })
+        .limit(10),
+    );
 
     if (error) {
       throw error;

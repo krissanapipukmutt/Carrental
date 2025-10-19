@@ -31,8 +31,11 @@
 รัน SQL ด้านล่างใน Supabase (ผ่าน SQL Editor หรือไฟล์ migration) เพื่อสร้างตาราง ความสัมพันธ์ และฐานสำหรับรายงาน
 
 ```sql
+create schema if not exists car_rental;
+set search_path to car_rental;
+
 -- Branches
-create table public.branches (
+create table car_rental.branches (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   address text not null,
@@ -41,10 +44,10 @@ create table public.branches (
 );
 
 -- Employees
-create table public.employees (
+create table car_rental.employees (
   id uuid primary key default gen_random_uuid(),
   auth_user_id uuid references auth.users on delete set null,
-  branch_id uuid references public.branches on delete set null,
+  branch_id uuid references car_rental.branches on delete set null,
   first_name text not null,
   last_name text not null,
   email text unique not null,
@@ -55,7 +58,7 @@ create table public.employees (
 );
 
 -- Customers
-create table public.customers (
+create table car_rental.customers (
   id uuid primary key default gen_random_uuid(),
   first_name text not null,
   last_name text not null,
@@ -68,7 +71,7 @@ create table public.customers (
 );
 
 -- Vehicle Categories
-create table public.vehicle_categories (
+create table car_rental.vehicle_categories (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   description text,
@@ -80,10 +83,10 @@ create table public.vehicle_categories (
 );
 
 -- Cars
-create table public.cars (
+create table car_rental.cars (
   id uuid primary key default gen_random_uuid(),
-  category_id uuid not null references public.vehicle_categories on delete restrict,
-  branch_id uuid references public.branches on delete set null,
+  category_id uuid not null references car_rental.vehicle_categories on delete restrict,
+  branch_id uuid references car_rental.branches on delete set null,
   registration_no text unique not null,
   vin text unique,
   make text not null,
@@ -96,14 +99,14 @@ create table public.cars (
 );
 
 -- Rental Contracts
-create table public.rental_contracts (
+create table car_rental.rental_contracts (
   id uuid primary key default gen_random_uuid(),
   contract_no text unique not null,
-  customer_id uuid not null references public.customers on delete cascade,
-  car_id uuid not null references public.cars on delete restrict,
-  pickup_branch_id uuid references public.branches on delete set null,
-  return_branch_id uuid references public.branches on delete set null,
-  employee_id uuid references public.employees on delete set null,
+  customer_id uuid not null references car_rental.customers on delete cascade,
+  car_id uuid not null references car_rental.cars on delete restrict,
+  pickup_branch_id uuid references car_rental.branches on delete set null,
+  return_branch_id uuid references car_rental.branches on delete set null,
+  employee_id uuid references car_rental.employees on delete set null,
   pickup_datetime timestamptz not null,
   return_datetime timestamptz not null,
   actual_return_datetime timestamptz,
@@ -130,53 +133,53 @@ create table public.rental_contracts (
 );
 
 -- Payments
-create table public.payments (
+create table car_rental.payments (
   id uuid primary key default gen_random_uuid(),
-  rental_id uuid not null references public.rental_contracts on delete cascade,
+  rental_id uuid not null references car_rental.rental_contracts on delete cascade,
   payment_date timestamptz not null default now(),
   payment_method text not null check (payment_method in ('cash','credit_card','debit_card','bank_transfer','e_wallet')),
   amount numeric(12,2) not null,
   payment_type text not null check (payment_type in ('deposit','rental_fee','late_fee','refund')),
   reference_no text,
-  received_by uuid references public.employees on delete set null,
+  received_by uuid references car_rental.employees on delete set null,
   notes text,
   created_at timestamptz not null default now()
 );
 
 -- Maintenance Records
-create table public.maintenance_records (
+create table car_rental.maintenance_records (
   id uuid primary key default gen_random_uuid(),
-  car_id uuid not null references public.cars on delete cascade,
+  car_id uuid not null references car_rental.cars on delete cascade,
   maintenance_date date not null,
   odometer int,
   maintenance_type text not null check (maintenance_type in ('scheduled','repair','cleaning','inspection')),
   cost numeric(12,2) default 0,
-  performed_by uuid references public.employees on delete set null,
+  performed_by uuid references car_rental.employees on delete set null,
   description text,
   created_at timestamptz not null default now()
 );
 
 -- Rental Inspections (pickup & return checklists)
-create table public.rental_inspections (
+create table car_rental.rental_inspections (
   id uuid primary key default gen_random_uuid(),
-  rental_id uuid not null references public.rental_contracts on delete cascade,
+  rental_id uuid not null references car_rental.rental_contracts on delete cascade,
   inspection_type text not null check (inspection_type in ('pickup','return')),
   inspection_datetime timestamptz not null default now(),
   odometer int,
   fuel_level_percent int check (fuel_level_percent between 0 and 100),
   damages jsonb default '[]'::jsonb,
   notes text,
-  inspected_by uuid references public.employees on delete set null,
+  inspected_by uuid references car_rental.employees on delete set null,
   created_at timestamptz not null default now()
 );
 
 -- Index to fetch active rentals per car quickly
-create index on public.rental_contracts (car_id, rental_status);
+create index on car_rental.rental_contracts (car_id, rental_status);
 
 -- Example row level security (enable and then add policies as needed)
-alter table public.customers enable row level security;
+alter table car_rental.customers enable row level security;
 create policy "Customers can view own profile"
-  on public.customers for select
+  on car_rental.customers for select
   using (auth.uid() = id);
 -- Add admin policies via Supabase Dashboard based on auth.roles, custom claims, or employees table
 
@@ -188,7 +191,7 @@ create policy "Customers can view own profile"
 
 ```sql
 -- 1. Revenue per period
-create materialized view public.mv_revenue_by_period as
+create materialized view car_rental.mv_revenue_by_period as
 select
   date_trunc('month', payment_date) as period,
   sum(case when payment_type = 'rental_fee' then amount else 0 end) as rental_income,
@@ -196,12 +199,12 @@ select
   sum(case when payment_type = 'deposit' then amount else 0 end) as deposits,
   sum(case when payment_type = 'refund' then amount else 0 end) as refunds,
   sum(amount) as total_income
-from public.payments
+from car_rental.payments
 group by 1
 order by 1 desc;
 
 -- 2. Car utilization (percentage of days rented within the last 90 days)
-create materialized view public.mv_car_utilization as
+create materialized view car_rental.mv_car_utilization as
 with rental_days as (
   select
     car_id,
@@ -220,7 +223,7 @@ with rental_days as (
       ),
       0
     )::int as rented_days
-  from public.rental_contracts
+  from car_rental.rental_contracts
   where pickup_datetime >= now() - interval '90 days'
   group by 1
 )
@@ -232,34 +235,34 @@ select
   rental_days.rented_days,
   90 as period_days,
   round((rental_days.rented_days::numeric / 90) * 100, 2) as utilization_percent
-from public.cars c
+from car_rental.cars c
 left join rental_days on rental_days.car_id = c.id;
 
 -- 3. Top repeat customers
-create materialized view public.mv_top_customers as
+create materialized view car_rental.mv_top_customers as
 select
   customer_id,
   count(*) as rental_count,
   sum(total_amount) as total_spent,
   min(pickup_datetime) as first_rental,
   max(return_datetime) as last_rental
-from public.rental_contracts
+from car_rental.rental_contracts
 where rental_status in ('completed','overdue')
 group by 1
 order by rental_count desc;
 
 -- 4. Maintenance history
-create materialized view public.mv_maintenance_history as
+create materialized view car_rental.mv_maintenance_history as
 select
   car_id,
   count(*) as total_jobs,
   sum(cost) as total_cost,
   max(maintenance_date) as last_service_date
-from public.maintenance_records
+from car_rental.maintenance_records
 group by 1;
 
 -- 5. Overdue rentals
-create materialized view public.mv_overdue_rentals as
+create materialized view car_rental.mv_overdue_rentals as
 select
   rc.id as rental_id,
   rc.contract_no,
@@ -269,7 +272,7 @@ select
   now() as current_time,
   extract(day from now() - rc.return_datetime)::int as overdue_days,
   rc.late_fee
-from public.rental_contracts rc
+from car_rental.rental_contracts rc
 where rc.rental_status = 'overdue'
 order by overdue_days desc;
 

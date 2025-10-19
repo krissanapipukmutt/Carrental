@@ -8,8 +8,8 @@ import { CAR_STATUSES, CAR_STATUS_LABELS } from "./constants";
 import { createCar } from "./actions";
 import { initialCreateCarState, type CreateCarState } from "./schemas";
 
-type Branch = Database["public"]["Tables"]["branches"]["Row"];
-type Category = Database["public"]["Tables"]["vehicle_categories"]["Row"];
+type Branch = Database["car_rental"]["Tables"]["branches"]["Row"];
+type Category = Database["car_rental"]["Tables"]["vehicle_categories"]["Row"];
 
 type Props = {
   branches: Branch[];

@@ -1,32 +1,30 @@
-import { createClient } from "@/lib/supabase/server";
-import { getAdminClient } from "@/lib/supabase/admin";
+import { executeWithAdminFallback } from "@/lib/supabase/query-helpers";
 import { RentalForm } from "./rental-form";
 
-const getSupabase = async () => {
-  try {
-    return getAdminClient();
-  } catch {
-    return await createClient();
-  }
-};
-
 export default async function RentalCreatePage() {
-  const supabase = await getSupabase();
-
-  const [{ data: customers, error: customerError }, { data: cars, error: carError }] =
-    await Promise.all([
-      supabase
+  const [customerResult, carResult] = await Promise.all([
+    executeWithAdminFallback((client) =>
+      client
+        .schema("car_rental")
         .from("customers")
         .select("id, first_name, last_name, email")
         .order("first_name", { ascending: true }),
-      supabase
+    ),
+    executeWithAdminFallback((client) =>
+      client
+        .schema("car_rental")
         .from("cars")
         .select(
           `id, registration_no, make, model, status, vehicle_categories (daily_rate)`
         )
-        .in("status", ["available", "reserved"])
+        .eq("status", "available")
         .order("make", { ascending: true }),
-    ]);
+    ),
+  ]);
+  const customers = customerResult.data;
+  const customerError = customerResult.error;
+  const cars = carResult.data;
+  const carError = carResult.error;
 
   if (customerError || carError) {
     throw new Error(customerError?.message ?? carError?.message ?? "ไม่สามารถโหลดข้อมูลสำหรับฟอร์มได้");
@@ -46,9 +44,7 @@ export default async function RentalCreatePage() {
     );
   }
 
-  const availableCars = (cars ?? []).filter((car) => car.status === "available");
-
-  if (!availableCars.length) {
+  if (!cars?.length) {
     return (
       <section className="space-y-4">
         <header className="space-y-1">
@@ -61,15 +57,18 @@ export default async function RentalCreatePage() {
     );
   }
 
-  const carOptions = availableCars.map((car) => ({
+  const carOptions = cars.map((car) => ({
     id: car.id,
     label: `${car.make} ${car.model} (${car.registration_no})`,
     defaultDailyRate: car.vehicle_categories?.daily_rate ?? null,
   }));
 
-  const { count } = await supabase
-    .from("rental_contracts")
-    .select("id", { count: "exact", head: true });
+  const { count } = await executeWithAdminFallback((client) =>
+    client
+      .schema("car_rental")
+      .from("rental_contracts")
+      .select("id", { count: "exact", head: true }),
+  );
 
   const year = new Date().getFullYear();
   const suggestedContractNo = `CR-${year}-${String((count ?? 0) + 1).padStart(4, "0")}`;

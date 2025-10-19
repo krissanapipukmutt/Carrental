@@ -8,17 +8,19 @@ export default async function CarCreatePage() {
   const [{ data: branches, error: branchError }, { data: categories, error: categoryError }] =
     await Promise.all([
       supabase
+        .schema("car_rental")
         .from("branches")
         .select("id, name")
         .order("name", { ascending: true }) as Promise<{
-        data: Database["public"]["Tables"]["branches"]["Row"][] | null;
+        data: Database["car_rental"]["Tables"]["branches"]["Row"][] | null;
         error: { message: string } | null;
       }>,
       supabase
+        .schema("car_rental")
         .from("vehicle_categories")
         .select("id, name, daily_rate")
         .order("name", { ascending: true }) as Promise<{
-        data: Database["public"]["Tables"]["vehicle_categories"]["Row"][] | null;
+        data: Database["car_rental"]["Tables"]["vehicle_categories"]["Row"][] | null;
         error: { message: string } | null;
       }>,
     ]);

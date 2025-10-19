@@ -1,15 +1,15 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { executeWithAdminFallback } from "@/lib/supabase/query-helpers";
 import type { Database } from "@/lib/supabase/types";
 import { updateCarStatus } from "./actions";
 import { CAR_STATUSES, CAR_STATUS_LABELS } from "./constants";
 
-type CarRow = Database["public"]["Tables"]["cars"]["Row"];
+type CarRow = Database["car_rental"]["Tables"]["cars"]["Row"];
 type CategoryRow =
-  Database["public"]["Tables"]["vehicle_categories"]["Row"];
-type BranchRow = Database["public"]["Tables"]["branches"]["Row"];
+  Database["car_rental"]["Tables"]["vehicle_categories"]["Row"];
+type BranchRow = Database["car_rental"]["Tables"]["branches"]["Row"];
 type MaintenanceRow =
-  Database["public"]["Tables"]["maintenance_records"]["Row"];
+  Database["car_rental"]["Tables"]["maintenance_records"]["Row"];
 
 type CarWithRelations = CarRow & {
   vehicle_categories: Pick<CategoryRow, "name" | "daily_rate"> | null;
@@ -86,11 +86,12 @@ async function fetchCars(): Promise<{
   error: string | null;
 }> {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("cars")
-      .select(
-        `
+    const { data, error } = await executeWithAdminFallback((client) =>
+      client
+        .schema("car_rental")
+        .from("cars")
+        .select(
+          `
         id,
         registration_no,
         status,
@@ -116,9 +117,10 @@ async function fetchCars(): Promise<{
           odometer
         )
       `
-      )
-      .order("make", { ascending: true })
-      .order("model", { ascending: true });
+        )
+        .order("make", { ascending: true })
+        .order("model", { ascending: true }),
+    );
 
     if (error) {
       throw error;

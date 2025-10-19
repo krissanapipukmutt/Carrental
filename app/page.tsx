@@ -1,22 +1,12 @@
+import { executeWithAdminFallback } from "@/lib/supabase/query-helpers";
 import { CarStatusSummaryCard } from "@/components/reports/car-status-summary";
 
-const summaryCards = [
-  {
-    label: "รายได้เดือนนี้",
-    value: "฿0.00",
-    description: "จะดึงจากรายงาน mv_revenue_by_period",
-  },
-  {
-    label: "จำนวนรถที่ถูกเช่า",
-    value: "0 / 0",
-    description: "ข้อมูลจากสถานะรถในตาราง cars",
-  },
-  {
-    label: "สัญญากำลังดำเนินการ",
-    value: "0",
-    description: "ข้อมูลจาก rental_contracts ที่สถานะ active",
-  },
-];
+const currencyFormatter = new Intl.NumberFormat("th-TH", {
+  style: "currency",
+  currency: "THB",
+});
+
+const numberFormatter = new Intl.NumberFormat("th-TH");
 
 const upcomingTasks = [
   "เชื่อมต่อ Supabase และตั้งค่า RLS",
@@ -24,7 +14,130 @@ const upcomingTasks = [
   "บันทึกการตรวจสภาพรถและการชำระเงิน",
   "สร้างแดชบอร์ดรายงาน 5 ประเภท",
 ];
+
+const getMonthlyRevenue = async () => {
+  try {
+    const { data, error } = await executeWithAdminFallback((client) =>
+      client
+        .schema("car_rental")
+        .from("mv_revenue_by_period")
+        .select("period,total_income")
+        .order("period", { ascending: false })
+        .limit(12),
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    const rows = data ?? [];
+    if (rows.length === 0) {
+      return 0;
+    }
+
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const targetRow = rows.find((row) => {
+      if (!row.period) {
+        return false;
+      }
+      const date = new Date(row.period as string);
+      return (
+        date.getMonth() === currentMonth && date.getFullYear() === currentYear
+      );
+    });
+
+    const totalIncome =
+      typeof targetRow?.total_income === "number"
+        ? targetRow.total_income
+        : Number(targetRow?.total_income ?? 0);
+
+    return Number.isFinite(totalIncome) ? totalIncome : 0;
+  } catch (error) {
+    console.error("dashboard monthly revenue error", error);
+    return 0;
+  }
+};
+
+const getCarCounts = async () => {
+  try {
+    const { data, error } = await executeWithAdminFallback((client) =>
+      client
+        .schema("car_rental")
+        .from("cars")
+        .select("status"),
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    const cars = data ?? [];
+    const total = cars.length;
+    const rented = cars.filter((car) => car.status === "rented").length;
+
+    return {
+      total,
+      rented,
+    };
+  } catch (error) {
+    console.error("dashboard car counts error", error);
+    return { total: 0, rented: 0 };
+  }
+};
+
+const getActiveContracts = async () => {
+  try {
+    const { count, error } = await executeWithAdminFallback((client) =>
+      client
+        .schema("car_rental")
+        .from("rental_contracts")
+        .select("id", { count: "exact", head: true })
+        .eq("rental_status", "active"),
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    return count ?? 0;
+  } catch (error) {
+    console.error("dashboard active contracts error", error);
+    return 0;
+  }
+};
+
+const fetchSummaryCards = async () => {
+  const [monthlyRevenue, carCounts, activeContracts] = await Promise.all([
+    getMonthlyRevenue(),
+    getCarCounts(),
+    getActiveContracts(),
+  ]);
+
+  return [
+    {
+      label: "รายได้เดือนนี้",
+      value: currencyFormatter.format(monthlyRevenue),
+      description: "ข้อมูลจากรายงาน mv_revenue_by_period",
+    },
+    {
+      label: "จำนวนรถที่ถูกเช่า",
+      value: `${numberFormatter.format(carCounts.rented)} / ${numberFormatter.format(carCounts.total)}`,
+      description: "ข้อมูลจากสถานะรถในตาราง cars",
+    },
+    {
+      label: "สัญญากำลังดำเนินการ",
+      value: numberFormatter.format(activeContracts),
+      description: "ข้อมูลจาก rental_contracts ที่สถานะ active",
+    },
+  ] as const;
+};
+
 export default async function DashboardPage() {
+  const summaryCards = await fetchSummaryCards();
+
   return (
     <section className="space-y-8">
       <div className="space-y-2">

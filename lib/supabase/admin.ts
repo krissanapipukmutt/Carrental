@@ -20,6 +20,9 @@ export const getAdminClient = () => {
   }
 
   cached = createClient<Database>(url, serviceRoleKey, {
+    db: {
+      schema: 'car_rental',
+    },
     auth: {
       autoRefreshToken: false,
       persistSession: false,

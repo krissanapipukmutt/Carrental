@@ -18,6 +18,7 @@ export async function updateCarStatus(formData: FormData) {
 
   const supabase = await createClient();
   const { error } = await supabase
+    .schema("car_rental")
     .from("cars")
     .update({ status: parsed.data.status })
     .eq("id", parsed.data.carId);
@@ -60,6 +61,7 @@ export async function createCar(
 
   const supabase = await createClient();
   const { error } = await supabase
+    .schema("car_rental")
     .from("cars")
     .insert({
       category_id: parsed.data.category_id,

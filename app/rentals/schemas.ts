@@ -77,4 +77,3 @@ export const initialCreateRentalState: CreateRentalState = {
   success: false,
   message: "",
 };
-*** End of File

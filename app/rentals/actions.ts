@@ -20,14 +20,6 @@ const paymentMethodSchema = z.enum([
   "e_wallet",
 ]);
 
-const carStatusSchema = z.enum([
-  "available",
-  "reserved",
-  "rented",
-  "maintenance",
-  "retired",
-]);
-
 const generateContractNo = (currentCount: number) => {
   const year = new Date().getFullYear();
   return `CR-${year}-${String(currentCount + 1).padStart(4, "0")}`;
@@ -45,6 +37,7 @@ export async function createRental(
   _prevState: CreateRentalState = initialCreateRentalState,
   formData: FormData,
 ): Promise<CreateRentalState> {
+  void _prevState;
   try {
     const parsed = createRentalSchema.safeParse({
       contract_no: formData.get("contract_no") ?? undefined,
@@ -81,17 +74,22 @@ export async function createRental(
       ),
     );
 
-    const totalAmount = data.daily_rate * dayDiff - (data.discount ?? 0);
+    const totalAmount = Math.max(
+      0,
+      data.daily_rate * dayDiff - (data.discount ?? 0),
+    );
 
     let contractNo = data.contract_no;
     if (!contractNo) {
       const { count } = await supabase
+        .schema("car_rental")
         .from("rental_contracts")
         .select("id", { count: "exact", head: true });
       contractNo = generateContractNo(count ?? 0);
     }
 
     const { data: rentalInsert, error: rentalError } = await supabase
+      .schema("car_rental")
       .from("rental_contracts")
       .insert({
         contract_no: contractNo,
@@ -117,6 +115,7 @@ export async function createRental(
     }
 
     const { error: carUpdateError } = await supabase
+      .schema("car_rental")
       .from("cars")
       .update({ status: "reserved" })
       .eq("id", data.car_id)
@@ -129,6 +128,7 @@ export async function createRental(
     if (data.deposit_amount && data.deposit_amount > 0 && data.payment_method) {
       const paymentMethod = paymentMethodSchema.parse(data.payment_method);
       const { error: paymentError } = await supabase
+        .schema("car_rental")
         .from("payments")
         .insert({
           rental_id: rentalInsert.id,
@@ -162,4 +162,3 @@ export async function createRental(
     };
   }
 }
-*** End of File

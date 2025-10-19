@@ -13,6 +13,9 @@ export const createClient = () => {
   }
 
   return createBrowserClient<Database>(url, anonKey, {
+    db: {
+      schema: 'car_rental',
+    },
     cookieOptions: {
       name: 'sb-car-rental-auth',
       lifetime: 60 * 60 * 24 * 7, // 7 วัน

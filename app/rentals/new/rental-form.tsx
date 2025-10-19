@@ -17,7 +17,7 @@ const formatDateTimeLocal = (value: Date) => {
 };
 
 type Customer = Pick<
-  Database["public"]["Tables"]["customers"]["Row"],
+  Database["car_rental"]["Tables"]["customers"]["Row"],
   "id" | "first_name" | "last_name" | "email"
 >;
 
@@ -154,7 +154,8 @@ export function RentalForm({ customers, cars, suggestedContractNo }: Props) {
           <label htmlFor="daily_rate" className="text-sm font-medium text-slate-700">
             ราคาต่อวัน (บาท) <span className="text-rose-500">*</span>
           </label>
-          <input
+         <input
+            key={`rate-${selectedCarId}`}
             id="daily_rate"
             name="daily_rate"
             type="number"
@@ -265,4 +266,3 @@ export function RentalForm({ customers, cars, suggestedContractNo }: Props) {
     </form>
   );
 }
-*** End of File

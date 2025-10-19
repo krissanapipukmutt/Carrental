@@ -1,8 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
-import { getAdminClient } from "@/lib/supabase/admin";
+import { executeWithAdminFallback } from "@/lib/supabase/query-helpers";
 import type { Database } from "@/lib/supabase/types";
 
-type CustomerRow = Database["public"]["Tables"]["customers"]["Row"];
+type CustomerRow = Database["car_rental"]["Tables"]["customers"]["Row"];
 type CustomerQueryRow = CustomerRow & {
   rental_contracts: { id: string }[] | null;
 };
@@ -16,30 +15,25 @@ async function fetchCustomers(): Promise<{
   error: string | null;
 }> {
   try {
-    let supabase;
-
-    try {
-      supabase = getAdminClient();
-    } catch {
-      supabase = await createClient();
-    }
-
-    const { data, error } = await supabase
-      .from("customers")
-      .select(
-        `
-        id,
-        first_name,
-        last_name,
-        email,
-        phone,
-        driver_license_no,
-        driver_license_expiry,
-        created_at,
-        rental_contracts ( id )
-      `,
-      )
-      .order("first_name", { ascending: true });
+    const { data, error } = await executeWithAdminFallback((client) =>
+      client
+        .schema("car_rental")
+        .from("customers")
+        .select(
+          `
+          id,
+          first_name,
+          last_name,
+          email,
+          phone,
+          driver_license_no,
+          driver_license_expiry,
+          created_at,
+          rental_contracts ( id )
+        `,
+        )
+        .order("first_name", { ascending: true }),
+    );
 
     if (error) {
       throw error;
@@ -130,6 +124,15 @@ export default async function CustomersPage() {
           เก็บข้อมูลลูกหนี้ การตรวจสอบใบขับขี่ และประวัติการเช่า
         </p>
       </header>
+
+      {process.env.NEXT_PUBLIC_DEBUG === 'true' && (
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700">
+          <strong>DEBUG: raw customers response</strong>
+          <pre className="mt-2 max-h-80 overflow-auto text-[11px]">
+            {JSON.stringify(customers, null, 2)}
+          </pre>
+        </div>
+      )}
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
