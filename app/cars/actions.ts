@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { executeWithAdminFallback } from "@/lib/supabase/query-helpers";
+import type { Database } from "@/lib/supabase/types";
 import { statusSchema, createCarSchema } from "./schemas";
 import type { CreateCarState } from "./schemas";
 
@@ -59,22 +61,24 @@ export async function createCar(
     };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase
-    .schema("car_rental")
-    .from("cars")
-    .insert({
-      category_id: parsed.data.category_id,
-      branch_id: parsed.data.branch_id,
-      registration_no: parsed.data.registration_no,
-      vin: parsed.data.vin,
-      make: parsed.data.make,
-      model: parsed.data.model,
-      year: parsed.data.year,
-      color: parsed.data.color,
-      mileage: parsed.data.mileage,
-      status: parsed.data.status,
-    });
+  const payload: Database["car_rental"]["Tables"]["cars"]["Insert"] = {
+    category_id: parsed.data.category_id,
+    branch_id: parsed.data.branch_id,
+    registration_no: parsed.data.registration_no,
+    vin: parsed.data.vin,
+    make: parsed.data.make,
+    model: parsed.data.model,
+    year: parsed.data.year,
+    color: parsed.data.color,
+    mileage: parsed.data.mileage,
+    status: parsed.data.status,
+  };
+
+  const { error } =
+    await executeWithAdminFallback<Database["car_rental"]["Tables"]["cars"]["Row"]>(
+      (client) =>
+        client.schema("car_rental").from("cars").insert(payload),
+    );
 
   if (error) {
     console.error("createCar supabase error", error.message);

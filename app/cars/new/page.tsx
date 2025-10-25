@@ -1,29 +1,31 @@
-import { createClient } from "@/lib/supabase/server";
+import { executeWithAdminFallback } from "@/lib/supabase/query-helpers";
 import type { Database } from "@/lib/supabase/types";
 import { AddCarForm } from "../add-car-form";
 
 export default async function CarCreatePage() {
-  const supabase = await createClient();
-
-  const [{ data: branches, error: branchError }, { data: categories, error: categoryError }] =
-    await Promise.all([
-      supabase
+  const [
+    { data: branches, error: branchError },
+    { data: categories, error: categoryError },
+  ] = await Promise.all([
+    executeWithAdminFallback<
+      Database["car_rental"]["Tables"]["branches"]["Row"]
+    >((client) =>
+      client
         .schema("car_rental")
         .from("branches")
         .select("id, name")
-        .order("name", { ascending: true }) as Promise<{
-        data: Database["car_rental"]["Tables"]["branches"]["Row"][] | null;
-        error: { message: string } | null;
-      }>,
-      supabase
+        .order("name", { ascending: true }),
+    ),
+    executeWithAdminFallback<
+      Database["car_rental"]["Tables"]["vehicle_categories"]["Row"]
+    >((client) =>
+      client
         .schema("car_rental")
         .from("vehicle_categories")
         .select("id, name, daily_rate")
-        .order("name", { ascending: true }) as Promise<{
-        data: Database["car_rental"]["Tables"]["vehicle_categories"]["Row"][] | null;
-        error: { message: string } | null;
-      }>,
-    ]);
+        .order("name", { ascending: true }),
+    ),
+  ]);
 
   if (branchError || categoryError) {
     throw new Error(
