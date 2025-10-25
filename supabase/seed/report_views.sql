@@ -9,6 +9,7 @@ DO $$
 DECLARE v_name text;
 BEGIN
   FOREACH v_name IN ARRAY ARRAY[
+    'mv_revenue_by_period',
     'mv_car_utilization',
     'mv_top_customers',
     'mv_maintenance_history',
@@ -29,9 +30,9 @@ BEGIN
   END LOOP;
 END $$;
 
--- ---------- ดรอป/สร้าง MATERIALIZED VIEW รายได้รายเดือน ----------
-DROP MATERIALIZED VIEW IF EXISTS car_rental.mv_revenue_by_period;
-CREATE MATERIALIZED VIEW car_rental.mv_revenue_by_period AS
+-- ---------- ดรอป/สร้าง VIEW รายได้รายเดือน ----------
+DROP VIEW IF EXISTS car_rental.mv_revenue_by_period;
+CREATE OR REPLACE VIEW car_rental.mv_revenue_by_period AS
 SELECT
   date_trunc('month', payment_date) AS period,
   SUM(CASE WHEN payment_type = 'rental_fee' THEN amount ELSE 0 END) AS rental_income,
@@ -41,10 +42,6 @@ SELECT
   SUM(amount) AS total_income
 FROM car_rental.payments
 GROUP BY 1;
-
--- ดัชนี (ให้ REFRESH CONCURRENTLY ได้และช่วย query)
-CREATE UNIQUE INDEX IF NOT EXISTS ux_mv_revenue_by_period_period
-ON car_rental.mv_revenue_by_period (period);
 
 -- ---------- สร้าง VIEW ต่าง ๆ ----------
 -- อัตราใช้งานรถ (90 วันย้อนหลัง)
