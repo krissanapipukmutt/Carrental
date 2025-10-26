@@ -1,13 +1,14 @@
 'use server';
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { executeWithAdminFallback } from "@/lib/supabase/query-helpers";
 import type { Database } from "@/lib/supabase/types";
 import { statusSchema, createCarSchema } from "./schemas";
 import type { CreateCarState } from "./schemas";
 
-export async function updateCarStatus(formData: FormData) {
+export async function updateCarStatus(
+  formData: FormData,
+): Promise<{ success: boolean; error?: string }> {
   const parsed = statusSchema.safeParse({
     carId: formData.get("carId"),
     status: formData.get("status"),
@@ -15,22 +16,34 @@ export async function updateCarStatus(formData: FormData) {
 
   if (!parsed.success) {
     console.error("updateCarStatus validation error", parsed.error.flatten());
-    return;
+    return {
+      success: false,
+      error: "ข้อมูลไม่ถูกต้อง",
+    };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase
-    .schema("car_rental")
-    .from("cars")
-    .update({ status: parsed.data.status })
-    .eq("id", parsed.data.carId);
+  const { error } =
+    await executeWithAdminFallback<
+      Database["car_rental"]["Tables"]["cars"]["Row"]
+    >((client) =>
+      client
+        .schema("car_rental")
+        .from("cars")
+        .update({ status: parsed.data.status })
+        .eq("id", parsed.data.carId),
+    );
 
   if (error) {
     console.error("updateCarStatus supabase error", error.message);
-    return;
+    return {
+      success: false,
+      error: error.message ?? "ไม่สามารถอัปเดตสถานะได้",
+    };
   }
 
-  revalidatePath("/cars");
+  return {
+    success: true,
+  };
 }
 
 export async function createCar(
